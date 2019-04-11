@@ -13,7 +13,12 @@ public class Node {
 	
 	private List<Resource> resources;
 	private Instant lastNotification;
-	
+
+	public Node(List<Resource> resources, Instant lastNotification) {
+		this.resources = resources;
+		this.lastNotification = lastNotification;
+	}
+
 	public List<Resource> contains(String fileName) {
 		return resources.stream()
 				.filter(resource -> resource.contains(fileName))
