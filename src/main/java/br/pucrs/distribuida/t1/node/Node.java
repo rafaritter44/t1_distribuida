@@ -28,5 +28,12 @@ public class Node {
 	public boolean isAlive() {
 		return Duration.between(lastNotification, Instant.now()).getSeconds() < ALIVE_NOTIFICATION_TIME;
 	}
-	
+
+	@Override
+	public String toString() {
+		return "Node{" +
+				"resources=" + resources +
+				", lastNotification=" + lastNotification +
+				'}';
+	}
 }
