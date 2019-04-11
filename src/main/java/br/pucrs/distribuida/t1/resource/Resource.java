@@ -2,9 +2,15 @@ package br.pucrs.distribuida.t1.resource;
 
 public class Resource {
 	
-	private String hash;
-	private String fileName;
 	private String ip;
+	private String fileName;
+	private String hash;
+	
+	public Resource(String ip, String fileName, String hash) {
+		this.ip = ip;
+		this.fileName = fileName;
+		this.hash = hash;
+	}
 	
 	public boolean contains(String name) {
 		return fileName.contains(name);
