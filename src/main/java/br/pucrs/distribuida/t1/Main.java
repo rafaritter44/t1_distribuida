@@ -7,13 +7,25 @@ public class Main {
 	
 	public static void main(String[] args) {
 
-		if(args[0].matches("supernode")) {
+		if (args.length != 1) {
+			System.out.println("Usage: java Main <node type>");
+			System.out.println(" 'node type' :");
+			System.out.println(" 'supernode' ");
+			System.out.println(" 'node' ");
+			System.exit(1);
+		}
+
+		if(args[0].equalsIgnoreCase("supernode")) {
 			SuperNode superNode = new SuperNode(null, null);
 			System.out.println(" I'm SUPER NODO = \n" + superNode.toString());
 		}
-		if(args[0].equalsIgnoreCase("node")) {
+		else if(args[0].equalsIgnoreCase("node")) {
 			Node node = new Node(null, null);
 			System.out.println(" I'm a NODE \n" + node.toString());
+		}
+		else {
+			System.out.println(" Command not found");
+			System.out.println(" Use 'supernode' or 'node' ");
 		}
 
 	}
