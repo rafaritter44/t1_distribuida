@@ -16,7 +16,7 @@ public class Main {
 		}
 
 		if(args[0].equalsIgnoreCase("supernode")) {
-			SuperNode superNode = new SuperNode(null, null);
+			SuperNode superNode = new SuperNode(null, null, null);
 			System.out.println(" I'm SUPER NODO = \n" + superNode.toString());
 		}
 		else if(args[0].equalsIgnoreCase("node")) {

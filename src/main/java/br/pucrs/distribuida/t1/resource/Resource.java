@@ -1,5 +1,7 @@
 package br.pucrs.distribuida.t1.resource;
 
+import br.pucrs.distribuida.t1.util.ToString;
+
 public class Resource {
 	
 	private String ip;
@@ -14,6 +16,11 @@ public class Resource {
 	
 	public boolean contains(String name) {
 		return fileName.contains(name);
+	}
+	
+	@Override
+	public String toString() {
+		return ToString.from(this);
 	}
 	
 }

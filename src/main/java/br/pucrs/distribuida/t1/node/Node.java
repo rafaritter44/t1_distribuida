@@ -6,11 +6,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import br.pucrs.distribuida.t1.resource.Resource;
+import br.pucrs.distribuida.t1.util.ToString;
 
 public class Node {
 	
-	private static final long ALIVE_NOTIFICATION_TIME = 5;
+	public static final long ALIVE_NOTIFICATION_TIME = 5;
 	
+	private String ip;
+	private String superNodeIp;
 	private List<Resource> resources;
 	private Instant lastNotification;
 
@@ -31,9 +34,6 @@ public class Node {
 
 	@Override
 	public String toString() {
-		return "Node{" +
-				"resources=" + resources +
-				", lastNotification=" + lastNotification +
-				'}';
+		return ToString.from(this);
 	}
 }
