@@ -1,6 +1,8 @@
 package br.pucrs.distribuida.t1.node;
 
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import br.pucrs.distribuida.t1.resource.Resource;
@@ -25,7 +27,16 @@ public class SuperNode {
 				.collect(Collectors.toList());
 	}
 	
-	public void removeDeadNodes() {
+	public void removeDeadNodesPeriodically() {
+		Executors.newSingleThreadScheduledExecutor()
+				.scheduleWithFixedDelay(
+						this::removeDeadNodes,
+						Node.ALIVE_NOTIFICATION_TIME,
+						Node.ALIVE_NOTIFICATION_TIME,
+						TimeUnit.SECONDS);
+	}
+	
+	private synchronized void removeDeadNodes() {
 		nodes.removeIf(node -> !node.isAlive());
 	}
 
@@ -33,4 +44,5 @@ public class SuperNode {
 	public String toString() {
 		return ToString.from(this);
 	}
+
 }
