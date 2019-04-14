@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import br.pucrs.distribuida.t1.resource.Resource;
-import br.pucrs.distribuida.t1.util.ToString;
+import br.pucrs.distribuida.t1.util.JsonUtils;
 
 public class Node {
 	
@@ -34,6 +34,6 @@ public class Node {
 
 	@Override
 	public String toString() {
-		return ToString.from(this);
+		return JsonUtils.toJson(this);
 	}
 }

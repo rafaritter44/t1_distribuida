@@ -1,6 +1,6 @@
 package br.pucrs.distribuida.t1.resource;
 
-import br.pucrs.distribuida.t1.util.ToString;
+import br.pucrs.distribuida.t1.util.JsonUtils;
 
 public class Resource {
 	
@@ -20,7 +20,7 @@ public class Resource {
 	
 	@Override
 	public String toString() {
-		return ToString.from(this);
+		return JsonUtils.toJson(this);
 	}
 	
 }
