@@ -7,27 +7,56 @@ import java.util.stream.Collectors;
 
 import br.pucrs.distribuida.t1.resource.Resource;
 import br.pucrs.distribuida.t1.util.ToString;
+import io.rsocket.AbstractRSocket;
+import io.rsocket.Payload;
+import io.rsocket.RSocketFactory;
+import io.rsocket.transport.netty.server.TcpServerTransport;
+import io.rsocket.util.DefaultPayload;
+import reactor.core.publisher.Mono;
 
-public class SuperNode {
+public class SuperNode extends AbstractRSocket {
 	
 	private String ip;
+	private int port;
 	private String multicastIp;
 	private List<Node> nodes;
 
-	public SuperNode(String ip, String multicastIp, List<Node> nodes) {
+	public SuperNode(String ip, int port, String multicastIp, List<Node> nodes) {
 		this.ip = ip;
+		this.port = port;
 		this.multicastIp = multicastIp;
 		this.nodes = nodes;
 	}
 	
-	public List<Resource> find(String fileName) {
+	public void run() {
+		initServer();
+		removeDeadNodesPeriodically();
+	}
+	
+	private void initServer() {
+		RSocketFactory.receive()
+				.acceptor((setupPayload, reactiveSocket) -> Mono.just(this))
+				.transport(TcpServerTransport.create(ip, port))
+				.start()
+				.subscribe();
+	}
+	
+	@Override
+	public Mono<Payload> requestResponse(Payload payload) {
+		return Mono.fromCallable(payload::getDataUtf8)
+				.map(this::find)
+				.map(ToString::from)
+				.map(DefaultPayload::create);
+	}
+	
+	private List<Resource> find(String fileName) {
 		return nodes.stream()
 				.map(node -> node.contains(fileName))
 				.flatMap(List::stream)
 				.collect(Collectors.toList());
 	}
 	
-	public void removeDeadNodesPeriodically() {
+	private void removeDeadNodesPeriodically() {
 		Executors.newSingleThreadScheduledExecutor()
 				.scheduleWithFixedDelay(
 						this::removeDeadNodes,
