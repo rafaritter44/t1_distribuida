@@ -1,33 +1,36 @@
 package br.pucrs.distribuida.t1.node;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import com.google.gson.reflect.TypeToken;
 
 import br.pucrs.distribuida.t1.resource.Resource;
 import br.pucrs.distribuida.t1.util.JsonUtils;
 import io.rsocket.AbstractRSocket;
 import io.rsocket.Payload;
 import io.rsocket.RSocketFactory;
+import io.rsocket.transport.netty.client.TcpClientTransport;
 import io.rsocket.transport.netty.server.TcpServerTransport;
 import io.rsocket.util.DefaultPayload;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public class SuperNode extends AbstractRSocket {
 	
-	private static final Type RESOURCE_LIST = new TypeToken<List<Resource>>() {}.getType();
-	private static final long REQUEST_TIMEOUT = 3L;
+	private static final int IP = 0;
+	private static final int PORT = 1;
+	private static final int FILE_NAME = 0;
+	private static final int IP_AND_PORT = 1;
 	
+	private MulticastSocket multicastSocket;
+	private Disposable unicastServer;
 	private String ip;
 	private int port;
 	private String multicastIp;
@@ -41,12 +44,17 @@ public class SuperNode extends AbstractRSocket {
 		this.nodes = nodes;
 	}
 	
-	public void run() {
-		initServer();
+	public void run() throws IOException {
+		startServer();
 		removeDeadNodesPeriodically();
 	}
 	
-	private void initServer() {
+	private void startServer() throws IOException {
+		startUnicastServer();
+		startMulticastServer();
+	}
+	
+	private void startUnicastServer() {
 		RSocketFactory.receive()
 				.acceptor((setupPayload, reactiveSocket) -> Mono.just(this))
 				.transport(TcpServerTransport.create(ip, port))
@@ -54,52 +62,79 @@ public class SuperNode extends AbstractRSocket {
 				.subscribe();
 	}
 	
-	@Override
-	public Flux<Payload> requestStream(Payload payload) {
-		return Mono.fromCallable(payload::getDataUtf8)
-				.map(this::find)
-				.flux()
-				.flatMap(Flux::fromIterable)
-				.concatWith(ifNodeRequestFromOtherSuperNodes(payload))
-				.map(JsonUtils::toJson)
-				.map(DefaultPayload::create);
-	}
-	
-	private Flux<Resource> ifNodeRequestFromOtherSuperNodes(Payload payload) {
-		if (isNode(payload.getMetadataUtf8())) {
-			try {
-				return requestFromOtherSuperNodes(payload.getDataUtf8());
-			} catch (IOException e) {
-				e.printStackTrace();
-				return Flux.empty();
-			}
-		}
-		else {
-			return Flux.empty();
-		}
-	}
-	
-	private boolean isNode(String ip) {
-		return !(ip.equals(multicastIp));
-	}
-	
-	private Flux<Resource> requestFromOtherSuperNodes(String fileName) throws IOException {
+	private void startMulticastServer() throws IOException {
+		@SuppressWarnings("resource")
 		MulticastSocket multicastSocket = new MulticastSocket(multicastPort);
 		InetAddress group = InetAddress.getByName(multicastIp);
 		multicastSocket.joinGroup(group);
-		return Mono.fromCallable(() -> requestResources(fileName, multicastSocket))
-				.repeat()
-				.take(Duration.ofSeconds(REQUEST_TIMEOUT))
-				.flatMap(Flux::fromIterable);
+		while (true) {
+			try {
+				handleOtherSuperNodesRequests();
+			} catch(Exception e) {
+				e.printStackTrace();
+			}
+		}
 	}
 	
-	private List<Resource> requestResources(String fileName, MulticastSocket multicastSocket) throws IOException {
+	private void handleOtherSuperNodesRequests() throws IOException {
+		DatagramPacket packet = receiveFromSuperNode();
+		String[] received = new String(packet.getData(), 0, packet.getLength()).split(";");
+		String fileName = received[FILE_NAME];
+		String nodeIpAndPort = received[IP_AND_PORT];
+		String superNodeIp = packet.getAddress().getHostAddress();
+		int superNodePort = packet.getPort();
+		sendResourcesToSuperNode(fileName, nodeIpAndPort, superNodeIp, superNodePort);
+	}
+	
+	private void sendResourcesToSuperNode(String fileName, String nodeIpAndPort, String superNodeIp, int superNodePort) {
+		RSocketFactory.connect()
+				.transport(TcpClientTransport.create(superNodeIp, superNodePort))
+				.start()
+				.flatMap(rsocket -> rsocket.fireAndForget(DefaultPayload.create(
+						JsonUtils.toJson(find(fileName)), nodeIpAndPort)))
+				.subscribe();
+	}
+	
+	private DatagramPacket receiveFromSuperNode() throws IOException {
 		byte[] buffer = new byte[256];
 		DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 		multicastSocket.receive(packet);
-		String json = new String(packet.getData(), 0, packet.getLength());
-		List<Resource> resources = JsonUtils.fromJson(json, RESOURCE_LIST);
-		return resources;
+		return packet;
+	}
+	
+	@Override
+	public Mono<Void> fireAndForget(Payload payload) {
+		String[] ipAndPort = payload.getMetadataUtf8().split(":");
+		return RSocketFactory.connect()
+				.transport(TcpClientTransport.create(ipAndPort[IP], Integer.parseInt(ipAndPort[PORT])))
+				.start()
+				.flatMap(rsocket -> rsocket.fireAndForget(payload));
+	}
+	
+	@Override
+	public Flux<Payload> requestStream(Payload payload) {
+		String fileName = payload.getDataUtf8();
+		String nodeIpAndPort = payload.getMetadataUtf8();
+		return Mono.just(fileName)
+				.flatMapIterable(this::find)
+				.map(JsonUtils::toJson)
+				.map(DefaultPayload::create)
+				.doOnComplete(() -> {
+					try {
+						requestFromOtherSuperNodes(fileName, nodeIpAndPort);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				});
+	}
+	
+	private void requestFromOtherSuperNodes(String fileName, String nodeIpAndPort) throws IOException {
+		DatagramSocket datagramSocket = new DatagramSocket();
+		InetAddress group = InetAddress.getByName(multicastIp);
+		byte[] buffer = (fileName + ";" + nodeIpAndPort).getBytes();
+		DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, multicastPort);
+		datagramSocket.send(packet);
+		datagramSocket.close();
 	}
 	
 	private List<Resource> find(String fileName) {
@@ -122,9 +157,8 @@ public class SuperNode extends AbstractRSocket {
 		nodes.removeIf(node -> !node.isAlive());
 	}
 
-	@Override
-	public String toString() {
-		return JsonUtils.toJson(this);
+	public void close() {
+		multicastSocket.close();
+		unicastServer.dispose();
 	}
-
 }
