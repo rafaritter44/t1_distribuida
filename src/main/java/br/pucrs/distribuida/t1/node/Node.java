@@ -7,6 +7,7 @@ import java.net.InetAddress;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executors;
@@ -39,7 +40,7 @@ public class Node extends AbstractRSocket {
 		this.port = port;
 		this.superNodeIp = superNodeIp;
 		this.superNodePort = superNodePort;
-		this.resources = new ArrayList<>();
+		this.resources = Collections.synchronizedList(new ArrayList<>());
 		this.lastNotification = Instant.now();
 	}
 	
@@ -50,6 +51,11 @@ public class Node extends AbstractRSocket {
 				.transport(TcpServerTransport.create(ip, port))
 				.start()
 				.subscribe();
+	}
+	
+	public void addResource(String fileName) {
+		Resource resource = ResourceManager.get().create(ip, port, fileName);
+		//TODO
 	}
 	
 	@Override

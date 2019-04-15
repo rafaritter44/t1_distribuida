@@ -146,6 +146,12 @@ public class SuperNode extends AbstractRSocket {
 	}
 	
 	@Override
+	public Mono<Payload> requestResponse(Payload payload) {
+		//TODO
+		return null;
+	}
+	
+	@Override
 	public Flux<Payload> requestStream(Payload payload) {
 		String fileName = payload.getDataUtf8();
 		String nodeIpAndPort = payload.getMetadataUtf8();
