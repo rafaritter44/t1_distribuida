@@ -1,6 +1,9 @@
 package br.pucrs.distribuida.t1.node;
 
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -103,6 +106,12 @@ public class Node extends AbstractRSocket {
 	
 	public boolean isAlive() {
 		return Duration.between(lastNotification, Instant.now()).getSeconds() < ALIVE_NOTIFICATION_TIME;
+	}
+
+	public void registerOnSuperNode(String superNodeIP, int port) throws IOException {
+		DatagramSocket socket = new DatagramSocket();
+		InetAddress address = InetAddress.getByName(superNodeIP);
+		socket.connect(address, port);
 	}
 	
 	public String getIp() {
