@@ -1,7 +1,5 @@
 package br.pucrs.distribuida.t1.util;
 
-import java.lang.reflect.Type;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
@@ -13,8 +11,8 @@ public class JsonUtils {
 		return GSON.toJson(object);
 	}
 	
-	public static <T> T fromJson(String json, Type type) throws JsonSyntaxException {
-		return GSON.fromJson(json, type);
+	public static <T> T fromJson(String json, Class<T> classOfT) throws JsonSyntaxException {
+		return GSON.fromJson(json, classOfT);
 	}
 	
 }

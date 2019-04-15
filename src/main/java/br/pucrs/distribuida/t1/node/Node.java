@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 import br.pucrs.distribuida.t1.resource.Resource;
 import br.pucrs.distribuida.t1.resource.ResourceManager;
+import br.pucrs.distribuida.t1.util.JsonUtils;
 import io.rsocket.AbstractRSocket;
 import io.rsocket.Payload;
 import io.rsocket.RSocketFactory;
@@ -55,7 +56,12 @@ public class Node extends AbstractRSocket {
 	
 	public void addResource(String fileName) {
 		Resource resource = ResourceManager.get().create(ip, port, fileName);
-		//TODO
+		RSocketFactory.connect()
+				.transport(TcpClientTransport.create(superNodeIp, superNodePort))
+				.start()
+				.map(rsocket -> rsocket.requestResponse(DefaultPayload.create(
+						JsonUtils.toJson(resource), ip + ":" + port)))
+				.subscribe(System.out::println);
 	}
 	
 	@Override
@@ -145,6 +151,10 @@ public class Node extends AbstractRSocket {
 	
 	public void notified() {
 		lastNotification = Instant.now();
+	}
+	
+	public void addResource(Resource resource) {
+		resources.add(resource);
 	}
 	
 	public String getIp() {

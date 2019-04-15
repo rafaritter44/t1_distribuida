@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import br.pucrs.distribuida.t1.resource.Resource;
@@ -27,7 +28,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public class SuperNode extends AbstractRSocket {
-	
+
 	private static final int IP = 0;
 	private static final int PORT = 1;
 	private static final int FILE_NAME = 0;
@@ -147,8 +148,17 @@ public class SuperNode extends AbstractRSocket {
 	
 	@Override
 	public Mono<Payload> requestResponse(Payload payload) {
-		//TODO
-		return null;
+		Resource resource = JsonUtils.fromJson(payload.getDataUtf8(), Resource.class);
+		String[] ipAndPort = payload.getMetadataUtf8().split(":");
+		Optional<Node> node = findNode(ipAndPort[IP], Integer.parseInt(ipAndPort[PORT]));
+		node.ifPresent(addResource(resource));
+		return node.isPresent()
+				? Mono.just(DefaultPayload.create("Resource added successfully!"))
+				: Mono.just(DefaultPayload.create("Node not found!"));
+	}
+	
+	private Consumer<Node> addResource(Resource resource) {
+		return node -> node.addResource(resource);
 	}
 	
 	@Override
