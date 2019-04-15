@@ -29,13 +29,13 @@ public class SuperNode extends AbstractRSocket {
 	private static final int FILE_NAME = 0;
 	private static final int IP_AND_PORT = 1;
 	
-	private MulticastSocket multicastSocket;
-	private Disposable unicastServer;
 	private String ip;
 	private int port;
 	private String multicastIp;
 	private int multicastPort;
 	private List<Node> nodes;
+	private MulticastSocket multicastSocket;
+	private Disposable unicastServer;
 
 	public SuperNode(String ip, int port, String multicastIp, List<Node> nodes) {
 		this.ip = ip;

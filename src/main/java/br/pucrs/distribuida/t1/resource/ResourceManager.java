@@ -43,13 +43,17 @@ public class ResourceManager {
 	
 	private synchronized String getHash(String fileName) {
 		try {
-			return new BigInteger(1, md5.digest(Files.readAllBytes(Paths.get(fileName)))).toString(16);
+			return new BigInteger(1, md5.digest(readContent(fileName))).toString(16);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		} finally {
 			md5.reset();
 		}
+	}
+	
+	public byte[] readContent(String fileName) throws IOException {
+		return Files.readAllBytes(Paths.get(fileName));
 	}
 	
 }

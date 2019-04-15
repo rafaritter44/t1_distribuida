@@ -18,6 +18,14 @@ public class Resource {
 		return fileName.contains(name);
 	}
 	
+	public String getFileName() {
+		return fileName;
+	}
+	
+	public String getHash() {
+		return hash;
+	}
+	
 	@Override
 	public String toString() {
 		return JsonUtils.toJson(this);
