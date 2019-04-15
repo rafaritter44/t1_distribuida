@@ -3,6 +3,7 @@ package br.pucrs.distribuida.t1.node;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -28,14 +29,13 @@ public class Node extends AbstractRSocket {
 	private List<Resource> resources;
 	private Instant lastNotification;
 
-	public Node(String ip, int port, String superNodeIp, int superNodePort,
-			List<Resource> resources, Instant lastNotification) {
+	public Node(String ip, int port, String superNodeIp, int superNodePort) {
 		this.ip = ip;
 		this.port = port;
 		this.superNodeIp = superNodeIp;
 		this.superNodePort = superNodePort;
-		this.resources = resources;
-		this.lastNotification = lastNotification;
+		this.resources = new ArrayList<>();
+		this.lastNotification = Instant.now();
 	}
 	
 	public void run() {
