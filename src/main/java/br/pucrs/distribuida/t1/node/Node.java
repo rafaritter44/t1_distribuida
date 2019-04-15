@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 import br.pucrs.distribuida.t1.resource.Resource;
 import br.pucrs.distribuida.t1.resource.ResourceManager;
-import br.pucrs.distribuida.t1.util.JsonUtils;
 import io.rsocket.AbstractRSocket;
 import io.rsocket.Payload;
 import io.rsocket.RSocketFactory;
@@ -53,7 +52,17 @@ public class Node extends AbstractRSocket {
 		return Mono.empty();
 	}
 	
-	public void requestFile(String ip, int port, String hash) {
+	public void requestResource(String fileName) {
+		RSocketFactory.connect()
+				.transport(TcpClientTransport.create(superNodeIp, superNodePort))
+				.start()
+				.flux()
+				.flatMap(rsocket -> rsocket.requestStream(DefaultPayload.create(fileName, ip + ":" + port)))
+				.map(Payload::getDataUtf8)
+				.subscribe(System.out::println);
+	}
+	
+	public void requestFileFromNode(String ip, int port, String hash) {
 		RSocketFactory.connect()
 				.transport(TcpClientTransport.create(ip, port))
 				.start()
@@ -95,9 +104,5 @@ public class Node extends AbstractRSocket {
 	public boolean isAlive() {
 		return Duration.between(lastNotification, Instant.now()).getSeconds() < ALIVE_NOTIFICATION_TIME;
 	}
-
-	@Override
-	public String toString() {
-		return JsonUtils.toJson(this);
-	}
+	
 }
