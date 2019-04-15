@@ -105,6 +105,10 @@ public class Node extends AbstractRSocket {
 		return Duration.between(lastNotification, Instant.now()).getSeconds() < ALIVE_NOTIFICATION_TIME;
 	}
 	
+	public void notified() {
+		lastNotification = Instant.now();
+	}
+	
 	public String getIp() {
 		return ip;
 	}

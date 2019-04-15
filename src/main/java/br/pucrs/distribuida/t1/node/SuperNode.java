@@ -8,6 +8,7 @@ import java.net.MulticastSocket;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -159,11 +160,18 @@ public class SuperNode extends AbstractRSocket {
 		nodes.removeIf(node -> !node.isAlive());
 	}
 	
+	private void nodeNotified(String ip, int port) {
+		findNode(ip, port).ifPresent(Node::notified);
+	}
+	
 	private boolean isRegistered(String ip, int port) {
+		return findNode(ip, port).isPresent();
+	}
+	
+	private Optional<Node> findNode(String ip, int port) {
 		return nodes.stream()
 				.filter(node -> ip.equals(node.getIp()) && port == node.getPort())
-				.findAny()
-				.isPresent();
+				.findAny();
 	}
 
 	public void close() {
