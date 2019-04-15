@@ -1,14 +1,11 @@
 package br.pucrs.distribuida.t1.node;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import com.google.gson.reflect.TypeToken;
 
 import br.pucrs.distribuida.t1.resource.Resource;
 import br.pucrs.distribuida.t1.resource.ResourceManager;
@@ -16,6 +13,7 @@ import br.pucrs.distribuida.t1.util.JsonUtils;
 import io.rsocket.AbstractRSocket;
 import io.rsocket.Payload;
 import io.rsocket.RSocketFactory;
+import io.rsocket.transport.netty.client.TcpClientTransport;
 import io.rsocket.transport.netty.server.TcpServerTransport;
 import io.rsocket.util.DefaultPayload;
 import reactor.core.publisher.Mono;
@@ -23,8 +21,6 @@ import reactor.core.publisher.Mono;
 public class Node extends AbstractRSocket {
 	
 	public static final long ALIVE_NOTIFICATION_TIME = 5;
-	
-	private static final Type RESOURCE_LIST = new TypeToken<List<Resource>>() {}.getType();
 	
 	private String ip;
 	private int port;
@@ -57,10 +53,20 @@ public class Node extends AbstractRSocket {
 		return Mono.empty();
 	}
 	
+	public void requestFile(String ip, int port, String hash) {
+		RSocketFactory.connect()
+				.transport(TcpClientTransport.create(ip, port))
+				.start()
+				.flatMap(rsocket -> rsocket.requestResponse(DefaultPayload.create(hash)))
+				.map(Payload::getDataUtf8)
+				.subscribe(System.out::println);
+	}
+	
 	@Override
 	public Mono<Payload> requestResponse(Payload payload) {
 		String hash = payload.getDataUtf8();
-		return get(hash).map(Resource::getFileName)
+		return getResource(hash)
+				.map(Resource::getFileName)
 				.map(fileName -> {
 					try {
 						return ResourceManager.get().readContent(fileName);
@@ -74,7 +80,7 @@ public class Node extends AbstractRSocket {
 				.orElseGet(() -> Mono.just(DefaultPayload.create("Not found!")));
 	}
 	
-	private Optional<Resource> get(String hash) {
+	private Optional<Resource> getResource(String hash) {
 		return resources.stream()
 				.filter(resource -> resource.getHash().equals(hash))
 				.findAny();

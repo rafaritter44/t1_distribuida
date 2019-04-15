@@ -29,8 +29,8 @@ public class ResourceManager {
 		return instance;
 	}
 	
-	public Resource create(String ip, String fileName) {
-		return new Resource(ip, fileName, md5(fileName));
+	public Resource create(String ip, int port, String fileName) {
+		return new Resource(ip, port, fileName, md5(fileName));
 	}
 	
 	private String md5(String fileName) {

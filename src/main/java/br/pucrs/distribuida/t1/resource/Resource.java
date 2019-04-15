@@ -5,11 +5,13 @@ import br.pucrs.distribuida.t1.util.JsonUtils;
 public class Resource {
 	
 	private String ip;
+	private int port;
 	private String fileName;
 	private String hash;
 	
-	public Resource(String ip, String fileName, String hash) {
+	public Resource(String ip, int port, String fileName, String hash) {
 		this.ip = ip;
+		this.port = port;
 		this.fileName = fileName;
 		this.hash = hash;
 	}

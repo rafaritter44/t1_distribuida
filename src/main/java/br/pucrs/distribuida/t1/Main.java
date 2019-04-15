@@ -20,7 +20,7 @@ public class Main {
 			System.out.println(" I'm SUPER NODO = \n" + superNode.toString());
 		}
 		else if(args[0].equalsIgnoreCase("node")) {
-			Node node = new Node(null, null);
+			Node node = new Node(null, 0, null, 0, null, null);
 			System.out.println(" I'm a NODE \n" + node.toString());
 		}
 		else {
