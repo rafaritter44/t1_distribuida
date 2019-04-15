@@ -9,6 +9,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import br.pucrs.distribuida.t1.resource.Resource;
@@ -42,6 +44,7 @@ public class Node extends AbstractRSocket {
 	}
 	
 	public void run() {
+		notifySuperNodePeriodically();
 		RSocketFactory.receive()
 				.acceptor((setupPayload, reactiveSocket) -> Mono.just(this))
 				.transport(TcpServerTransport.create(ip, port))
@@ -107,11 +110,31 @@ public class Node extends AbstractRSocket {
 	public boolean isAlive() {
 		return Duration.between(lastNotification, Instant.now()).getSeconds() < ALIVE_NOTIFICATION_TIME;
 	}
-
-	public void registerOnSuperNode(String superNodeIP, int port) throws IOException {
-		DatagramSocket socket = new DatagramSocket();
-		InetAddress address = InetAddress.getByName(superNodeIP);
-		socket.connect(address, port);
+	
+	private void notifySuperNodePeriodically() {
+		Executors.newSingleThreadScheduledExecutor()
+				.scheduleWithFixedDelay(
+						this::tryToNotifySuperNode,
+						Node.ALIVE_NOTIFICATION_TIME,
+						Node.ALIVE_NOTIFICATION_TIME,
+						TimeUnit.SECONDS);
+	}
+	
+	private void tryToNotifySuperNode() {
+		try {
+			notifySuperNode();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void notifySuperNode() throws IOException {
+		DatagramSocket datagramSocket = new DatagramSocket();
+		InetAddress superNodeAddress = InetAddress.getByName(superNodeIp);
+		byte[] buffer = "ping".getBytes();
+		DatagramPacket packet = new DatagramPacket(buffer, buffer.length, superNodeAddress, superNodePort);
+		datagramSocket.send(packet);
+		datagramSocket.close();
 	}
 	
 	public void notified() {

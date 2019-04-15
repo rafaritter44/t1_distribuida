@@ -5,6 +5,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -50,6 +51,36 @@ public class SuperNode extends AbstractRSocket {
 	public void run() throws IOException {
 		startServer();
 		removeDeadNodesPeriodically();
+		receiveNotificationsFromNodes();
+	}
+	
+	private void receiveNotificationsFromNodes() throws SocketException {
+		DatagramSocket datagramSocket = new DatagramSocket();
+		while (true) {
+			try {
+				receiveNotificationFromNode(datagramSocket);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	private void receiveNotificationFromNode(DatagramSocket datagramSocket) throws IOException {
+		byte[] buffer = new byte[256];
+		DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+		datagramSocket.receive(packet);
+		String nodeIp = packet.getAddress().getHostAddress();
+		int nodePort = packet.getPort();
+		updateNode(nodeIp, nodePort);
+	}
+	
+	private void updateNode(String nodeIp, int nodePort) {
+		if (isRegistered(nodeIp, nodePort)) {
+			Node node = new Node(nodeIp, nodePort, ip, port);
+			nodes.add(node);
+		} else {
+			nodeNotified(nodeIp, nodePort);
+		}
 	}
 	
 	private void startServer() throws IOException {
