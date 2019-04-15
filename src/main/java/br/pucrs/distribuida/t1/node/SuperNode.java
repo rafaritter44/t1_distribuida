@@ -5,6 +5,8 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -37,11 +39,11 @@ public class SuperNode extends AbstractRSocket {
 	private MulticastSocket multicastSocket;
 	private Disposable unicastServer;
 
-	public SuperNode(String ip, int port, String multicastIp, List<Node> nodes) {
+	public SuperNode(String ip, int port, String multicastIp) {
 		this.ip = ip;
 		this.port = port;
 		this.multicastIp = multicastIp;
-		this.nodes = nodes;
+		nodes = Collections.synchronizedList(new ArrayList<>());
 	}
 	
 	public void run() throws IOException {
@@ -153,8 +155,15 @@ public class SuperNode extends AbstractRSocket {
 						TimeUnit.SECONDS);
 	}
 	
-	private synchronized void removeDeadNodes() {
+	private void removeDeadNodes() {
 		nodes.removeIf(node -> !node.isAlive());
+	}
+	
+	private boolean isRegistered(String ip, int port) {
+		return nodes.stream()
+				.filter(node -> ip.equals(node.getIp()) && port == node.getPort())
+				.findAny()
+				.isPresent();
 	}
 
 	public void close() {
