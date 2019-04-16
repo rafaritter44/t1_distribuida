@@ -99,8 +99,7 @@ public class SuperNode extends AbstractRSocket {
 	}
 	
 	private void startMulticastServer() throws IOException {
-		@SuppressWarnings("resource")
-		MulticastSocket multicastSocket = new MulticastSocket(multicastPort);
+		multicastSocket = new MulticastSocket(multicastPort);
 		InetAddress group = InetAddress.getByName(multicastIp);
 		multicastSocket.joinGroup(group);
 		while (true) {
