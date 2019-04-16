@@ -132,7 +132,7 @@ public class Node extends AbstractRSocket {
 				.scheduleWithFixedDelay(
 						this::tryToNotifySuperNode,
 						NOTIFY_SUPER_NODE_IMMEDIATELY,
-						ALIVE_NOTIFICATION_TIME / 2,
+						ALIVE_NOTIFICATION_TIME - 1L,
 						TimeUnit.SECONDS);
 	}
 	
@@ -151,7 +151,6 @@ public class Node extends AbstractRSocket {
 		DatagramPacket packet = new DatagramPacket(buffer, buffer.length, superNodeAddress, superNodePort);
 		datagramSocket.send(packet);
 		datagramSocket.close();
-		System.out.println("Super node notified!");
 	}
 	
 	public void notified() {
