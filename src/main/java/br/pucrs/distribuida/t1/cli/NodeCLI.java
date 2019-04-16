@@ -46,7 +46,6 @@ public class NodeCLI {
 		System.out.println("Please, enter the file name:");
 		String fileName = keyboard.nextLine();
 		node.requestResource(fileName);
-		pressEnterToResume();
 	}
 	
 	private void requestFile() {
@@ -63,19 +62,12 @@ public class NodeCLI {
 		System.out.println("Please, enter the resource hash:");
 		String hash = keyboard.nextLine();
 		node.requestFileFromNode(ip, port, hash);
-		pressEnterToResume();
 	}
 	
 	private void addResource() {
 		System.out.println("Please, enter the file name:");
 		String fileName = keyboard.nextLine();
 		node.addResource(fileName);
-		pressEnterToResume();
-	}
-	
-	private void pressEnterToResume() {
-		System.out.println("Press [ENTER] to resume");
-		keyboard.hasNextLine();
 	}
 	
 }
