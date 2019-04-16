@@ -86,7 +86,7 @@ public class SuperNode extends AbstractRSocket {
 	}
 	
 	private void startServer() throws IOException {
-		startUnicastServer();
+		new Thread(this::startUnicastServer).start();
 		startMulticastServer();
 	}
 	
