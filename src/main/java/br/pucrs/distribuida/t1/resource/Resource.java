@@ -4,7 +4,9 @@ import br.pucrs.distribuida.t1.util.JsonUtils;
 
 public class Resource {
 	
+	@SuppressWarnings("unused")
 	private String ip;
+	@SuppressWarnings("unused")
 	private int port;
 	private String fileName;
 	private String hash;

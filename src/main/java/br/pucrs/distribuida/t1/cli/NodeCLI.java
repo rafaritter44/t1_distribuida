@@ -8,6 +8,7 @@ public class NodeCLI {
 	
 	private static final String RESOURCE = "r";
 	private static final String FILE = "f";
+	private static final String ADD = "a";
 	
 	private Node node;
 	private Scanner keyboard;
@@ -28,6 +29,7 @@ public class NodeCLI {
 	private void showOptions() {
 		System.out.println(String.format("(%s) Request resource to Super Node", RESOURCE));
 		System.out.println(String.format("(%s) Request file to other node", FILE));
+		System.out.println(String.format("(%s) Add resource", ADD));
 	}
 	
 	private void selectOption() {
@@ -35,6 +37,7 @@ public class NodeCLI {
 		switch(option) {
 		case RESOURCE: requestResource(); break;
 		case FILE: requestFile(); break;
+		case ADD: addResource(); break;
 		default: System.out.println(String.format("Invalid option: %s", option));
 		}
 	}
@@ -60,6 +63,13 @@ public class NodeCLI {
 		System.out.println("Please, enter the resource hash:");
 		String hash = keyboard.nextLine();
 		node.requestFileFromNode(ip, port, hash);
+		pressEnterToResume();
+	}
+	
+	private void addResource() {
+		System.out.println("Please, enter the file name:");
+		String fileName = keyboard.nextLine();
+		node.addResource(fileName);
 		pressEnterToResume();
 	}
 	
