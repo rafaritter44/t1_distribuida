@@ -42,10 +42,11 @@ public class SuperNode extends AbstractRSocket {
 	private MulticastSocket multicastSocket;
 	private Disposable unicastServer;
 
-	public SuperNode(String ip, int port, String multicastIp) {
+	public SuperNode(String ip, int port, String multicastIp, int multicastPort) {
 		this.ip = ip;
 		this.port = port;
 		this.multicastIp = multicastIp;
+		this.multicastPort = multicastPort;
 		nodes = Collections.synchronizedList(new ArrayList<>());
 	}
 	
