@@ -27,7 +27,9 @@ import reactor.core.publisher.Mono;
 
 public class Node extends AbstractRSocket {
 	
-	public static final long ALIVE_NOTIFICATION_TIME = 5;
+	public static final long ALIVE_NOTIFICATION_TIME = 5L;
+	
+	private static final long NOTIFY_SUPER_NODE_IMMEDIATELY = 0L;
 	
 	private String ip;
 	private int port;
@@ -129,8 +131,8 @@ public class Node extends AbstractRSocket {
 		Executors.newSingleThreadScheduledExecutor()
 				.scheduleWithFixedDelay(
 						this::tryToNotifySuperNode,
-						Node.ALIVE_NOTIFICATION_TIME,
-						Node.ALIVE_NOTIFICATION_TIME,
+						NOTIFY_SUPER_NODE_IMMEDIATELY,
+						ALIVE_NOTIFICATION_TIME / 2,
 						TimeUnit.SECONDS);
 	}
 	
@@ -149,6 +151,7 @@ public class Node extends AbstractRSocket {
 		DatagramPacket packet = new DatagramPacket(buffer, buffer.length, superNodeAddress, superNodePort);
 		datagramSocket.send(packet);
 		datagramSocket.close();
+		System.out.println("Super node notified!");
 	}
 	
 	public void notified() {

@@ -57,7 +57,7 @@ public class SuperNode extends AbstractRSocket {
 	}
 	
 	private void receiveNotificationsFromNodes() throws SocketException {
-		DatagramSocket datagramSocket = new DatagramSocket();
+		DatagramSocket datagramSocket = new DatagramSocket(port);
 		while (true) {
 			try {
 				receiveNotificationFromNode(datagramSocket);
@@ -68,26 +68,30 @@ public class SuperNode extends AbstractRSocket {
 	}
 	
 	private void receiveNotificationFromNode(DatagramSocket datagramSocket) throws IOException {
+		System.out.println("Trying to receive notification from node...");
 		byte[] buffer = new byte[256];
 		DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 		datagramSocket.receive(packet);
+		System.out.println("received: " + new String(packet.getData()));
 		String nodeIp = packet.getAddress().getHostAddress();
 		int nodePort = packet.getPort();
 		updateNode(nodeIp, nodePort);
 	}
 	
 	private void updateNode(String nodeIp, int nodePort) {
-		if (isRegistered(nodeIp, nodePort)) {
+		if (isRegistered(nodeIp)) {
+			nodeNotified(nodeIp);
+			System.out.println("Node notified!");
+		} else {
 			Node node = new Node(nodeIp, nodePort, ip, port);
 			nodes.add(node);
-		} else {
-			nodeNotified(nodeIp, nodePort);
+			System.out.println("Node added!");
 		}
 	}
 	
 	private void startServer() throws IOException {
-		new Thread(this::startUnicastServer).start();
-		startMulticastServer();
+		startUnicastServer();
+		new Thread(this::startMulticastServer).start();
 	}
 	
 	private void startUnicastServer() {
@@ -98,10 +102,15 @@ public class SuperNode extends AbstractRSocket {
 				.subscribe();
 	}
 	
-	private void startMulticastServer() throws IOException {
-		multicastSocket = new MulticastSocket(multicastPort);
-		InetAddress group = InetAddress.getByName(multicastIp);
-		multicastSocket.joinGroup(group);
+	private void startMulticastServer() {
+		try {
+			multicastSocket = new MulticastSocket(multicastPort);
+			InetAddress group = InetAddress.getByName(multicastIp);
+			multicastSocket.joinGroup(group);
+		} catch(IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
 		while (true) {
 			try {
 				handleOtherSuperNodesRequests();
@@ -151,7 +160,7 @@ public class SuperNode extends AbstractRSocket {
 	public Mono<Payload> requestResponse(Payload payload) {
 		Resource resource = JsonUtils.fromJson(payload.getDataUtf8(), Resource.class);
 		String[] ipAndPort = payload.getMetadataUtf8().split(":");
-		Optional<Node> node = findNode(ipAndPort[IP], Integer.parseInt(ipAndPort[PORT]));
+		Optional<Node> node = findNode(ipAndPort[IP]);
 		node.ifPresent(addResource(resource));
 		return node.isPresent()
 				? Mono.just(DefaultPayload.create("Resource added successfully!"))
@@ -206,19 +215,25 @@ public class SuperNode extends AbstractRSocket {
 	
 	private void removeDeadNodes() {
 		nodes.removeIf(node -> !node.isAlive());
+		showAliveNodes();
 	}
 	
-	private void nodeNotified(String ip, int port) {
-		findNode(ip, port).ifPresent(Node::notified);
+	private void showAliveNodes() {
+		System.out.println("Alive nodes:");
+		nodes.stream().map(Node::getIp).forEach(System.out::println);
 	}
 	
-	private boolean isRegistered(String ip, int port) {
-		return findNode(ip, port).isPresent();
+	private void nodeNotified(String ip) {
+		findNode(ip).ifPresent(Node::notified);
 	}
 	
-	private Optional<Node> findNode(String ip, int port) {
+	private boolean isRegistered(String ip) {
+		return findNode(ip).isPresent();
+	}
+	
+	private Optional<Node> findNode(String ip) {
 		return nodes.stream()
-				.filter(node -> ip.equals(node.getIp()) && port == node.getPort())
+				.filter(node -> ip.equals(node.getIp()))
 				.findAny();
 	}
 
