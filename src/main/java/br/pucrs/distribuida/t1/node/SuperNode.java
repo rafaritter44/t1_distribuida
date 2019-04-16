@@ -125,8 +125,8 @@ public class SuperNode extends AbstractRSocket {
 		RSocketFactory.connect()
 				.transport(TcpClientTransport.create(superNodeIp, superNodePort))
 				.start()
-				.flatMap(rsocket -> rsocket.fireAndForget(DefaultPayload.create(
-						JsonUtils.toJson(find(fileName)), nodeIpAndPort)))
+				.block()
+				.fireAndForget(DefaultPayload.create(JsonUtils.toJson(find(fileName)), nodeIpAndPort))
 				.subscribe();
 	}
 	
@@ -143,7 +143,8 @@ public class SuperNode extends AbstractRSocket {
 		return RSocketFactory.connect()
 				.transport(TcpClientTransport.create(ipAndPort[IP], Integer.parseInt(ipAndPort[PORT])))
 				.start()
-				.flatMap(rsocket -> rsocket.fireAndForget(payload));
+				.block()
+				.fireAndForget(payload);
 	}
 	
 	@Override

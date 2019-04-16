@@ -59,8 +59,9 @@ public class Node extends AbstractRSocket {
 		RSocketFactory.connect()
 				.transport(TcpClientTransport.create(superNodeIp, superNodePort))
 				.start()
-				.map(rsocket -> rsocket.requestResponse(DefaultPayload.create(
-						JsonUtils.toJson(resource), ip + ":" + port)))
+				.block()
+				.requestResponse(DefaultPayload.create(JsonUtils.toJson(resource), ip + ":" + port))
+				.map(Payload::getDataUtf8)
 				.subscribe(System.out::println);
 	}
 	
@@ -74,8 +75,8 @@ public class Node extends AbstractRSocket {
 		RSocketFactory.connect()
 				.transport(TcpClientTransport.create(superNodeIp, superNodePort))
 				.start()
-				.flux()
-				.flatMap(rsocket -> rsocket.requestStream(DefaultPayload.create(fileName, ip + ":" + port)))
+				.block()
+				.requestStream(DefaultPayload.create(fileName, ip + ":" + port))
 				.map(Payload::getDataUtf8)
 				.subscribe(System.out::println);
 	}
@@ -84,7 +85,8 @@ public class Node extends AbstractRSocket {
 		RSocketFactory.connect()
 				.transport(TcpClientTransport.create(ip, port))
 				.start()
-				.flatMap(rsocket -> rsocket.requestResponse(DefaultPayload.create(hash)))
+				.block()
+				.requestResponse(DefaultPayload.create(hash))
 				.map(Payload::getDataUtf8)
 				.subscribe(System.out::println);
 	}
