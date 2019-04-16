@@ -18,7 +18,7 @@ public class Main {
 		}
 		String type = args[0];
 		switch(type) {
-		case "node":
+		case "supernode":
 			String superNodeIp = args[1];
 			int superNodePort = Integer.parseInt(args[2]);
 			String multicastIp = args[3];
@@ -26,7 +26,7 @@ public class Main {
 			SuperNode superNode = new SuperNode(superNodeIp, superNodePort, multicastIp, multicastPort);
 			superNode.run();
 			break;
-		case "supernode":
+		case "node":
 			String nodeIp = args[1];
 			int nodePort = Integer.parseInt(args[2]);
 			superNodeIp = args[3];
