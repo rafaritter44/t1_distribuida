@@ -19,7 +19,7 @@ public class NodeCLI {
 	}
 	
 	public void run() {
-		System.out.println("===== WELCOME TO NODE COMMAND-LINE INTERFACE =====");
+		System.out.println("===== WELCOME TO THE NODE COMMAND-LINE INTERFACE =====");
 		while (true) {
 			showOptions();
 			selectOption();

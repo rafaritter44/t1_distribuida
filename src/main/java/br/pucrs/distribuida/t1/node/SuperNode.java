@@ -48,7 +48,7 @@ public class SuperNode extends AbstractRSocket {
 		this.port = port;
 		this.multicastIp = multicastIp;
 		this.multicastPort = multicastPort;
-		nodes = Collections.synchronizedList(new ArrayList<>());
+		this.nodes = Collections.synchronizedList(new ArrayList<>());
 	}
 	
 	public void run() throws IOException {
@@ -69,12 +69,11 @@ public class SuperNode extends AbstractRSocket {
 	}
 	
 	private void receiveNotificationFromNode(DatagramSocket datagramSocket) throws IOException {
-		System.out.println("Trying to receive notification from node...");
 		byte[] buffer = new byte[256];
 		DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 		datagramSocket.receive(packet);
-		System.out.println("received: " + new String(packet.getData()));
 		String nodeIp = packet.getAddress().getHostAddress();
+		System.out.println("Received \"" + new String(packet.getData()) + "\" from " + nodeIp);
 		int nodePort = packet.getPort();
 		updateNode(nodeIp, nodePort);
 	}
@@ -82,11 +81,11 @@ public class SuperNode extends AbstractRSocket {
 	private void updateNode(String nodeIp, int nodePort) {
 		if (isRegistered(nodeIp)) {
 			nodeNotified(nodeIp);
-			System.out.println("Node notified!");
+			System.out.println(String.format("Node %s sent a notification!", nodeIp));
 		} else {
 			Node node = new Node(nodeIp, nodePort, this.ip, this.port);
 			nodes.add(node);
-			System.out.println("Node added!");
+			System.out.println(String.format("Node %s registered!", nodeIp));
 		}
 	}
 	
@@ -212,15 +211,19 @@ public class SuperNode extends AbstractRSocket {
 	private void removeDeadNodesPeriodically() {
 		Executors.newSingleThreadScheduledExecutor()
 				.scheduleWithFixedDelay(
-						this::removeDeadNodes,
+						this::removeDeadNodesAndShowAliveNodes,
 						Node.ALIVE_NOTIFICATION_TIME,
 						Node.ALIVE_NOTIFICATION_TIME,
 						TimeUnit.SECONDS);
 	}
 	
+	private void removeDeadNodesAndShowAliveNodes() {
+		removeDeadNodes();
+		showAliveNodes();
+	}
+	
 	private void removeDeadNodes() {
 		nodes.removeIf(node -> !node.isAlive());
-		showAliveNodes();
 	}
 	
 	private void showAliveNodes() {

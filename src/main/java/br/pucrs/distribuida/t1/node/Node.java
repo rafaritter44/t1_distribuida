@@ -103,7 +103,7 @@ public class Node extends AbstractRSocket {
 					try {
 						return ResourceManager.get().readContent(fileName);
 					} catch (IOException e) {
-						e.printStackTrace();
+						System.out.println(e.getMessage());
 						return null;
 					}
 				})
@@ -141,7 +141,7 @@ public class Node extends AbstractRSocket {
 		try {
 			notifySuperNode();
 		} catch (IOException e) {
-			e.printStackTrace();
+			System.out.println(e.getMessage());
 		}
 	}
 	
