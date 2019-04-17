@@ -58,6 +58,7 @@ public class Node extends AbstractRSocket {
 	
 	public void addResource(String fileName) {
 		Resource resource = ResourceManager.get().create(ip, port, fileName);
+		addResource(resource);
 		RSocketFactory.connect()
 				.transport(TcpClientTransport.create(superNodeIp, superNodePort))
 				.start()
