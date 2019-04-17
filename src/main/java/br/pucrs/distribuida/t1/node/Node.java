@@ -51,19 +51,19 @@ public class Node extends AbstractRSocket {
 		notifySuperNodePeriodically();
 		RSocketFactory.receive()
 				.acceptor((setupPayload, reactiveSocket) -> Mono.just(this))
-				.transport(TcpServerTransport.create(ip, port))
+				.transport(TcpServerTransport.create(this.ip, this.port))
 				.start()
 				.subscribe();
 	}
 	
 	public void addResource(String fileName) {
-		Resource resource = ResourceManager.get().create(ip, port, fileName);
+		Resource resource = ResourceManager.get().create(this.ip, this.port, fileName);
 		addResource(resource);
 		RSocketFactory.connect()
 				.transport(TcpClientTransport.create(superNodeIp, superNodePort))
 				.start()
 				.block()
-				.requestResponse(DefaultPayload.create(JsonUtils.toJson(resource), ip + ":" + port))
+				.requestResponse(DefaultPayload.create(JsonUtils.toJson(resource), this.ip + ":" + this.port))
 				.map(Payload::getDataUtf8)
 				.subscribe(System.out::println);
 	}
@@ -79,7 +79,7 @@ public class Node extends AbstractRSocket {
 				.transport(TcpClientTransport.create(superNodeIp, superNodePort))
 				.start()
 				.block()
-				.requestStream(DefaultPayload.create(fileName, ip + ":" + port))
+				.requestStream(DefaultPayload.create(fileName, this.ip + ":" + this.port))
 				.map(Payload::getDataUtf8)
 				.subscribe(System.out::println);
 	}
@@ -163,11 +163,11 @@ public class Node extends AbstractRSocket {
 	}
 	
 	public String getIp() {
-		return ip;
+		return this.ip;
 	}
 	
 	public int getPort() {
-		return port;
+		return this.port;
 	}
 	
 }

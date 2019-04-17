@@ -32,7 +32,8 @@ public class SuperNode extends AbstractRSocket {
 	private static final int IP = 0;
 	private static final int PORT = 1;
 	private static final int FILE_NAME = 0;
-	private static final int IP_AND_PORT = 1;
+	private static final int NODE_IP_AND_PORT = 1;
+	private static final int SUPER_NODE_IP_AND_PORT = 2;
 	
 	private String ip;
 	private int port;
@@ -57,7 +58,7 @@ public class SuperNode extends AbstractRSocket {
 	}
 	
 	private void receiveNotificationsFromNodes() throws SocketException {
-		DatagramSocket datagramSocket = new DatagramSocket(port);
+		DatagramSocket datagramSocket = new DatagramSocket(this.port);
 		while (true) {
 			try {
 				receiveNotificationFromNode(datagramSocket);
@@ -83,7 +84,7 @@ public class SuperNode extends AbstractRSocket {
 			nodeNotified(nodeIp);
 			System.out.println("Node notified!");
 		} else {
-			Node node = new Node(nodeIp, nodePort, ip, port);
+			Node node = new Node(nodeIp, nodePort, this.ip, this.port);
 			nodes.add(node);
 			System.out.println("Node added!");
 		}
@@ -97,7 +98,7 @@ public class SuperNode extends AbstractRSocket {
 	private void startUnicastServer() {
 		RSocketFactory.receive()
 				.acceptor((setupPayload, reactiveSocket) -> Mono.just(this))
-				.transport(TcpServerTransport.create(ip, port))
+				.transport(TcpServerTransport.create(this.ip, this.port))
 				.start()
 				.subscribe();
 	}
@@ -113,21 +114,33 @@ public class SuperNode extends AbstractRSocket {
 		}
 		while (true) {
 			try {
-				handleOtherSuperNodesRequests();
+				DatagramPacket packet = receiveFromSuperNode();
+				if (isFromOtherSuperNode(packet)) { handleOtherSuperNodesRequests(packet); }
 			} catch(Exception e) {
 				e.printStackTrace();
 			}
 		}
 	}
 	
-	private void handleOtherSuperNodesRequests() throws IOException {
-		DatagramPacket packet = receiveFromSuperNode();
+	private void handleOtherSuperNodesRequests(DatagramPacket packet) throws IOException {
 		String[] received = new String(packet.getData(), 0, packet.getLength()).split(";");
 		String fileName = received[FILE_NAME];
-		String nodeIpAndPort = received[IP_AND_PORT];
-		String superNodeIp = packet.getAddress().getHostAddress();
-		int superNodePort = packet.getPort();
+		String nodeIpAndPort = received[NODE_IP_AND_PORT];
+		String[] superNodeIpAndPort = received[SUPER_NODE_IP_AND_PORT].split(":");
+		String superNodeIp = superNodeIpAndPort[IP];
+		int superNodePort = Integer.parseInt(superNodeIpAndPort[PORT]);
 		sendResourcesToSuperNode(fileName, nodeIpAndPort, superNodeIp, superNodePort);
+	}
+	
+	private DatagramPacket receiveFromSuperNode() throws IOException {
+		byte[] buffer = new byte[256];
+		DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+		multicastSocket.receive(packet);
+		return packet;
+	}
+	
+	private boolean isFromOtherSuperNode(DatagramPacket packet) {
+		return !(this.ip.equals(packet.getAddress().getHostAddress()));
 	}
 	
 	private void sendResourcesToSuperNode(String fileName, String nodeIpAndPort, String superNodeIp, int superNodePort) {
@@ -139,21 +152,15 @@ public class SuperNode extends AbstractRSocket {
 				.subscribe();
 	}
 	
-	private DatagramPacket receiveFromSuperNode() throws IOException {
-		byte[] buffer = new byte[256];
-		DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-		multicastSocket.receive(packet);
-		return packet;
-	}
-	
 	@Override
 	public Mono<Void> fireAndForget(Payload payload) {
 		String[] ipAndPort = payload.getMetadataUtf8().split(":");
-		return RSocketFactory.connect()
+		RSocketFactory.connect()
 				.transport(TcpClientTransport.create(ipAndPort[IP], Integer.parseInt(ipAndPort[PORT])))
 				.start()
-				.block()
-				.fireAndForget(payload);
+				.flatMap(rsocket -> rsocket.fireAndForget(payload))
+				.subscribe();
+		return Mono.empty();
 	}
 	
 	@Override
@@ -189,12 +196,10 @@ public class SuperNode extends AbstractRSocket {
 	}
 	
 	private void requestFromOtherSuperNodes(String fileName, String nodeIpAndPort) throws IOException {
-		DatagramSocket datagramSocket = new DatagramSocket();
 		InetAddress group = InetAddress.getByName(multicastIp);
-		byte[] buffer = (fileName + ";" + nodeIpAndPort).getBytes();
+		byte[] buffer = (fileName + ";" + nodeIpAndPort + ";" + this.ip + ":" + this.port).getBytes();
 		DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, multicastPort);
-		datagramSocket.send(packet);
-		datagramSocket.close();
+		multicastSocket.send(packet);
 	}
 	
 	private List<Resource> find(String fileName) {
