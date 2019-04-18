@@ -90,8 +90,19 @@ public class Node extends AbstractRSocket {
 				.start()
 				.block()
 				.requestResponse(DefaultPayload.create(hash))
-				.map(Payload::getDataUtf8)
-				.subscribe(System.out::println);
+				.subscribe(this::saveAndPrintResponseFile);
+	}
+	
+	private void saveAndPrintResponseFile(Payload payload) {
+		String content = payload.getDataUtf8();
+		String fileName = payload.getMetadataUtf8();
+		System.out.println(content);
+		if (fileName.isEmpty()) { return; }
+		try {
+			ResourceManager.get().saveFile(fileName, content);
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+		}
 	}
 	
 	@Override
@@ -99,17 +110,20 @@ public class Node extends AbstractRSocket {
 		String hash = payload.getDataUtf8();
 		return getResource(hash)
 				.map(Resource::getFileName)
-				.map(fileName -> {
-					try {
-						return ResourceManager.get().readContent(fileName);
-					} catch (IOException e) {
-						System.out.println(e.getMessage());
-						return null;
-					}
-				})
-				.map(DefaultPayload::create)
+				.flatMap(this::responseWithRequestedFile)
 				.map(Mono::just)
-				.orElseGet(() -> Mono.just(DefaultPayload.create("Not found!")));
+				.orElseGet(() -> Mono.just(DefaultPayload.create("File not found!")));
+	}
+	
+	private Optional<Payload> responseWithRequestedFile(String fileName) {
+		byte[] content;
+		try {
+			content = ResourceManager.get().readContent(fileName);
+		} catch (IOException e) {
+			System.out.println(e.getMessage());
+			return Optional.empty();
+		}
+		return Optional.of(DefaultPayload.create(content, fileName.getBytes()));
 	}
 	
 	private Optional<Resource> getResource(String hash) {

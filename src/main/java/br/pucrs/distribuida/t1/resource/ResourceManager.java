@@ -1,6 +1,7 @@
 package br.pucrs.distribuida.t1.resource;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -54,6 +55,12 @@ public class ResourceManager {
 	
 	public byte[] readContent(String fileName) throws IOException {
 		return Files.readAllBytes(Paths.get(fileName));
+	}
+	
+	public void saveFile(String fileName, String content) throws Exception {
+		try (PrintWriter writer = new PrintWriter(fileName)) {
+			writer.print(content);
+		}
 	}
 	
 }
